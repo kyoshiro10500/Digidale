@@ -13,6 +13,11 @@ import subprocess
 from pykeyboard import PyKeyboard
 k = PyKeyboard()
 ############################
+def standart(data):
+    str_data=str(data)
+    debut=str_data.find('begin')
+    fin=str_data.find('end')
+    return str_data[debut+6:fin-1]
 
 def find_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -31,14 +36,15 @@ while True:
     conn, addr = mysock.accept() #accept the connection
     print("Connected by: " + str(addr)) #print the address of the person connected
     data = conn.recv(1024) #how many bytes of data will the server receive
-    print("Received: "+ str(data)[2:-3])
-    if(str(data)[2:-3]=="ping"):
+    std_data=standart(data)
+    print("Received: "+ std_data)
+    if(std_data=="ping"):
         print("Ping recu")
         conn.close()
-    elif(str(data)[2:-3]=='launch'):
+    elif(std_data=='launch'):
         subprocess.call("chmod u+x ../../Digidale/Application/essai.sh", shell=True)
         subprocess.call("../../Digidale/Application/essai.sh", shell=True)
-    elif(str(data)[2:-3]=='stop'):
+    elif(std_data=='stop'):
         conn.close()
         mysock.close()
         break
