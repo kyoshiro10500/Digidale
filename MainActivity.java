@@ -20,9 +20,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 
 public class MainActivity extends AppCompatActivity
@@ -51,15 +49,28 @@ public class MainActivity extends AppCompatActivity
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        final Button button = (Button) findViewById(R.id.btn_launch);
-        button.setOnClickListener(new View.OnClickListener() {
+        final Button btn_launch = (Button) findViewById(R.id.btn_launch);
+        btn_launch.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 onClickBtnLaunch();
                 // Code here executes on main thread after user presses button
             }
         });
 
-
+        final Button btn_ping = (Button) findViewById(R.id.btn_ping);
+        btn_ping.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                onClickBtnPing();
+                // Code here executes on main thread after user presses button
+            }
+        });
+        final Button btn_stopserver = (Button) findViewById(R.id.btn_stopserver);
+        btn_stopserver.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                onClickBtnStopServer();
+                // Code here executes on main thread after user presses button
+            }
+        });
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
@@ -100,29 +111,29 @@ public class MainActivity extends AppCompatActivity
 
     public void onClickBtnLaunch(){
 
-        EditText et = (EditText) findViewById(R.id.EditText01);
-        final String str = et.getText().toString();
+
+        EditText et1 = (EditText) findViewById(R.id.EditText01);
+        final String str1 = et1.getText().toString();
 
         EditText et2 = (EditText) findViewById(R.id.EditText02);
-        final String str2 = et2.getText().toString();
+        final String str2 =et2.getText().toString();
+
+        final String ip_address = "192.168."+str1+"."+str2;
 
         EditText et3 = (EditText) findViewById(R.id.EditText03);
-        final Integer str3 = Integer.parseInt(et3.getText().toString());
+        final Integer ip_port = Integer.parseInt(et3.getText().toString());
 
-
-        Toast toast = Toast.makeText(getApplicationContext(), str+"\n"+str2+"\n"+str3, Toast.LENGTH_SHORT);
-        toast.show();
 
         Thread t = new Thread() {
 
             @Override
             public void run() {
                 try {
-                    Socket s = new Socket(str2, str3);
+                    Socket s = new Socket(ip_address,ip_port);
                     PrintWriter out = new PrintWriter(new BufferedWriter(
                             new OutputStreamWriter(s.getOutputStream())),
                             true);
-                    out.println(str);
+                    out.println("launch");
                     s.close();
 
                 } catch (IOException e) {
@@ -131,8 +142,75 @@ public class MainActivity extends AppCompatActivity
             }
         };
         t.start();
+        Toast toast = Toast.makeText(getApplicationContext(), "Script lancé", Toast.LENGTH_SHORT);
+        toast.show();
     }
 
+    public void onClickBtnPing(){
+        EditText et1 = (EditText) findViewById(R.id.EditText01);
+        final String str1 = et1.getText().toString();
+
+        EditText et2 = (EditText) findViewById(R.id.EditText02);
+        final String str2 =et2.getText().toString();
+
+        final String ip_address = "192.168."+str1+"."+str2;
+
+        EditText et3 = (EditText) findViewById(R.id.EditText03);
+        final Integer ip_port = Integer.parseInt(et3.getText().toString());
+        Thread t = new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    Socket s = new Socket(ip_address,ip_port);
+                    PrintWriter out = new PrintWriter(new BufferedWriter(
+                            new OutputStreamWriter(s.getOutputStream())),
+                            true);
+                    out.println("ping");
+                    s.close();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        t.start();
+        Toast toast = Toast.makeText(getApplicationContext(), "Ping envoyé", Toast.LENGTH_SHORT);
+        toast.show();
+    }
+    public void onClickBtnStopServer(){
+        EditText et1 = (EditText) findViewById(R.id.EditText01);
+        final String str1 = et1.getText().toString();
+
+        EditText et2 = (EditText) findViewById(R.id.EditText02);
+        final String str2 =et2.getText().toString();
+
+        final String ip_address = "192.168."+str1+"."+str2;
+
+        EditText et3 = (EditText) findViewById(R.id.EditText03);
+        final Integer ip_port = Integer.parseInt(et3.getText().toString());
+        Thread t = new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    Socket s = new Socket(ip_address,ip_port);
+                    PrintWriter out = new PrintWriter(new BufferedWriter(
+                            new OutputStreamWriter(s.getOutputStream())),
+                            true);
+                    out.println("stop");
+                    s.close();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        t.start();
+        Toast toast = Toast.makeText(getApplicationContext(), "Server arrêté", Toast.LENGTH_SHORT);
+        toast.show();
+
+    }
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {

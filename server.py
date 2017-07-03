@@ -7,7 +7,7 @@ Created on Fri Jun 30 18:26:12 2017
 """
 from socket import *
 import socket
-
+import subprocess
 ##########################
 ## Test press bar ########
 from pykeyboard import PyKeyboard
@@ -32,11 +32,13 @@ while True:
     print("Connected by: " + str(addr)) #print the address of the person connected
     data = conn.recv(1024) #how many bytes of data will the server receive
     print("Received: "+ str(data)[2:-3])
-    if(str(data)[2:-3]=="s"):
-        k.press_key(' ')
-        k.release_key(' ')
+    if(str(data)[2:-3]=="ping"):
+        print("Ping recu")
         conn.close()
-    elif(str(data)[2:-3]=='q'):
+    elif(str(data)[2:-3]=='launch'):
+        subprocess.call("chmod u+x ../../Digidale/Application/essai.sh", shell=True)
+        subprocess.call("../../Digidale/Application/essai.sh", shell=True)
+    elif(str(data)[2:-3]=='stop'):
         conn.close()
         mysock.close()
         break
