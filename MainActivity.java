@@ -5,6 +5,7 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -15,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.GridView;
 import android.widget.Toast;
 import android.widget.EditText;
 
@@ -33,6 +35,8 @@ import java.net.Socket;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
         private String nb_ips ="Default" ;
+    private ImageAdapter grid_adapt;
+    private GridView gridview;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,6 +82,10 @@ public class MainActivity extends AppCompatActivity
                 // Code here executes on main thread after user presses button
             }
         });
+
+        gridview = (GridView) findViewById(R.id.gridViewScreens);
+        grid_adapt = new ImageAdapter(this);
+        gridview.setAdapter(grid_adapt);
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
@@ -178,6 +186,7 @@ public class MainActivity extends AppCompatActivity
                     BufferedReader bfr = new BufferedReader(new InputStreamReader (s.getInputStream()));
                     nb_ips = bfr.readLine();
 
+
                     s.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -185,7 +194,10 @@ public class MainActivity extends AppCompatActivity
             }
         };
         t.start();
+
         SystemClock.sleep(200);
+        grid_adapt.updateThumb(Integer.parseInt(nb_ips));
+        gridview.invalidateViews();
         Toast toast = Toast.makeText(getApplicationContext(), "ICI :"+nb_ips, Toast.LENGTH_SHORT);
         toast.show();
 
