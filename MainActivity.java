@@ -1,6 +1,8 @@
 package com.example.jonathan.applicationtest;
 
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.widget.Button;
@@ -16,16 +18,21 @@ import android.view.MenuItem;
 import android.widget.Toast;
 import android.widget.EditText;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.Socket;
+
 
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-
+        private String nb_ips ="Default" ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -133,7 +140,7 @@ public class MainActivity extends AppCompatActivity
                     PrintWriter out = new PrintWriter(new BufferedWriter(
                             new OutputStreamWriter(s.getOutputStream())),
                             true);
-                    out.println("launch");
+                    out.println("begin-launch-end");
                     s.close();
 
                 } catch (IOException e) {
@@ -166,17 +173,25 @@ public class MainActivity extends AppCompatActivity
                     PrintWriter out = new PrintWriter(new BufferedWriter(
                             new OutputStreamWriter(s.getOutputStream())),
                             true);
-                    out.println("ping");
-                    s.close();
+                    out.println("begin-ping-end");
 
+                    BufferedReader bfr = new BufferedReader(new InputStreamReader (s.getInputStream()));
+                    nb_ips = bfr.readLine();
+
+                    s.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         };
         t.start();
-        Toast toast = Toast.makeText(getApplicationContext(), "Ping envoyé", Toast.LENGTH_SHORT);
+        SystemClock.sleep(200);
+        Toast toast = Toast.makeText(getApplicationContext(), "ICI :"+nb_ips, Toast.LENGTH_SHORT);
         toast.show();
+
+
+        //Toast toast = Toast.makeText(getApplicationContext(), "ping envoyé", Toast.LENGTH_SHORT);
+        //toast.show();
     }
     public void onClickBtnStopServer(){
         EditText et1 = (EditText) findViewById(R.id.EditText01);
@@ -198,7 +213,7 @@ public class MainActivity extends AppCompatActivity
                     PrintWriter out = new PrintWriter(new BufferedWriter(
                             new OutputStreamWriter(s.getOutputStream())),
                             true);
-                    out.println("stop");
+                    out.println("begin-stop-end");
                     s.close();
 
                 } catch (IOException e) {

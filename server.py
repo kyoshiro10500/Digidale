@@ -98,6 +98,8 @@ while True:
         print("IPs détectées :")
         for i in range(len(ips)):
             print(ips[i])
+        conn.sendall((str(nb_ips)+"\n").encode())
+        print("message envoyé")
         conn.close()
     elif(std_data=='launch'):
         # Récupération des IP ['192.X.X.X', 'X.X.X.X']
