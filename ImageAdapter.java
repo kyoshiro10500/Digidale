@@ -43,7 +43,7 @@ public class ImageAdapter extends BaseAdapter {
             // if it's not recycled, initialize some attributes
 
             imageView = new ImageView(mContext);
-            imageView.setLayoutParams(new GridView.LayoutParams(110, 110));
+            imageView.setLayoutParams(new GridView.LayoutParams(150, 150));
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             imageView.setPadding(8,8,2,8);
 
@@ -58,6 +58,7 @@ public class ImageAdapter extends BaseAdapter {
     // references to our images
     private Integer[] mThumbIds = {};
     public void updateThumb(int nb){
+        this.mThumbIds= new Integer[]{};
         this.mThumbIds  = Arrays.copyOf(this.mThumbIds, this.mThumbIds.length + nb);
         for(int i=1;i<=nb;i++) {
             this.mThumbIds[this.mThumbIds.length - i] = R.drawable.screen;
