@@ -71,9 +71,9 @@ def send_media():
     
 outlock = threading.Lock()
 cmd="pwomxplayer --tile-code=41 udp://239.0.1.23:1234?buffer_size=1200000B"
-
-tableau_ssh=[0 for i in range(nb_ips)]
+tableau_ssh=[]
 def workon(host,tableau_ssh,i,boolean):
+    tableau_ssh=[0 for i in range(nb_ips)]
     tableau_ssh[i] = paramiko.SSHClient()
     tableau_ssh[i].set_missing_host_key_policy(paramiko.AutoAddPolicy())
     tableau_ssh[i].connect(host, username='pi', password='raspberry')
@@ -89,6 +89,17 @@ def workon(host,tableau_ssh,i,boolean):
 
     with outlock:
         print(stdout.readlines())
+def print_num(host,i):
+    print("Connection TO : "+host+str(i))
+    connection=paramiko.SSHClient()
+    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    connection.connect(host, username='pi', password='raspberry')
+    connection.exec_command("sudo fbi -T 1 "+str(i+1)+".jpg")
+
+
+    time.sleep(5)
+    connection.exec_command("sudo ./close_fbi.sh")
+    connection.close
 while True:
     conn, addr = mysock.accept() #accept the connection
     print("Connected by: " + str(addr)) #print the address of the person connected
@@ -132,6 +143,11 @@ while True:
 #         subprocess.call("chmod u+x ../../Digidale/Application/essai.sh", shell=True)
 #         subprocess.call("../../Digidale/Application/essai.sh", shell=True)
 #==============================================================================
+    elif(std_data[:-1]=="idscreen"):
+        num_ip=std_data[-1]
+        ip=ips[int(num_ip)]
+        t = threading.Thread(target=print_num, args=(ips[int(num_ip)],int(num_ip),))
+        t.start()
     elif(std_data=='stop'):
         threads = []
         for i in range(nb_ips):
