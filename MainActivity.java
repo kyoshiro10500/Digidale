@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.widget.GridView;
 import android.widget.Toast;
 import android.widget.EditText;
+import android.widget.AdapterView.OnItemClickListener;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,7 +30,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.net.Socket;
-
+import java.util.Arrays;
 
 
 public class MainActivity extends AppCompatActivity
@@ -37,6 +38,7 @@ public class MainActivity extends AppCompatActivity
         private String nb_ips ="Default" ;
     private ImageAdapter grid_adapt;
     private GridView gridview;
+    private String[] liste_ips={};
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -185,7 +187,10 @@ public class MainActivity extends AppCompatActivity
 
                     BufferedReader bfr = new BufferedReader(new InputStreamReader (s.getInputStream()));
                     nb_ips = bfr.readLine();
-
+                    for(int i=0;i < Integer.parseInt(nb_ips);i++){
+                        liste_ips= Arrays.copyOf(liste_ips, liste_ips.length + 1);
+                        liste_ips[liste_ips.length - 1] = bfr.readLine();
+                    }
 
                     s.close();
                 } catch (IOException e) {
@@ -198,6 +203,12 @@ public class MainActivity extends AppCompatActivity
         SystemClock.sleep(200);
         grid_adapt.updateThumb(Integer.parseInt(nb_ips));
         gridview.invalidateViews();
+        gridview.setOnItemClickListener(new OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                Toast.makeText(MainActivity.this, liste_ips[position],
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
         Toast toast = Toast.makeText(getApplicationContext(), "ICI :"+nb_ips, Toast.LENGTH_SHORT);
         toast.show();
 

@@ -41,7 +41,12 @@ def get_ips():
         addresses[i]=addresses[i][:j]
     return addresses
 
-
+def set_ips():
+    str_ips=""
+    for ip in ips:
+        str_ips+=ip+"\n"
+    return str_ips
+    
 
         
 os.popen('sudo arp-scan 169.254.229.20/24 > scan.txt','w').write('digidalepower')
@@ -98,7 +103,7 @@ while True:
         print("IPs détectées :")
         for i in range(len(ips)):
             print(ips[i])
-        conn.sendall((str(nb_ips)+"\n").encode())
+        conn.sendall((str(nb_ips)+"\n"+set_ips()).encode())
         print("message envoyé")
         conn.close()
     elif(std_data=='launch'):
@@ -107,6 +112,8 @@ while True:
         #---------- Création des SSH ----------------------------
         #--------------------------------------------------------
         threads = []
+        print("-----------------------------------------\n-----------------------------------------\n")
+        print("NB_IPS = : " + str(nb_ips))
         for i in range(nb_ips):
             t = threading.Thread(target=workon, args=(ips[i],tableau_ssh,i,True,))
             t.start()
