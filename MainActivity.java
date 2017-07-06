@@ -204,9 +204,26 @@ public class MainActivity extends AppCompatActivity
         grid_adapt.updateThumb(Integer.parseInt(nb_ips));
         gridview.invalidateViews();
         gridview.setOnItemClickListener(new OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View v, final int position, long id) {
                 Toast.makeText(MainActivity.this, liste_ips[position],
                         Toast.LENGTH_SHORT).show();
+                Thread t = new Thread() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            Socket s = new Socket(ip_address,ip_port);
+                            PrintWriter out = new PrintWriter(new BufferedWriter(
+                                    new OutputStreamWriter(s.getOutputStream())),
+                                    true);
+                            out.println("begin-idscreen"+Integer.toString(position)+"-end");
+                            s.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                t.start();
             }
         });
         Toast toast = Toast.makeText(getApplicationContext(), "ICI :"+nb_ips, Toast.LENGTH_SHORT);
