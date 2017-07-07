@@ -54,7 +54,7 @@ def send_media():
     """Envoi du flux média par le serveur."""
     subprocess.call("avconv -re -i movie.mp4 -vcodec copy -f avi -an udp://239.0.1.23:1234", shell=True)
 
-def workon(host,i,boolean):
+def workon(host,i,boolean,place):
     """Mise des écrans en attente du flux média."""
     tableau_ssh=[0 for i in range(nb_ips)]
     tableau_ssh[i] = paramiko.SSHClient()
@@ -62,9 +62,9 @@ def workon(host,i,boolean):
     tableau_ssh[i].connect(host, username='pi', password='raspberry')
     if(boolean):
         if(host=="169.254.229.10"):
-            tableau_ssh[i].exec_command("pwomxplayer --tile-code=42 udp://239.0.1.23:1234?buffer_size=1200000B | ./fbcp")
+            tableau_ssh[i].exec_command("pwomxplayer --tile-code=4"+place+" udp://239.0.1.23:1234?buffer_size=1200000B | ./fbcp")
         else:
-            tableau_ssh[i].exec_command("pwomxplayer --tile-code=41 udp://239.0.1.23:1234?buffer_size=1200000B")
+            tableau_ssh[i].exec_command("pwomxplayer --tile-code=4"+place+" udp://239.0.1.23:1234?buffer_size=1200000B")
     else:
          tableau_ssh[i].exec_command("./script.sh")
          
@@ -80,6 +80,15 @@ def print_num(host,i):
     print("Numéro effacé.")
     connection.close
     
+def get_setting(std_data):
+    """A partir des data standardisées reçues, retourne [place ip1, place ip2, ...] ."""
+    setting=[]
+    i=std_data.find('/')
+    while i!=-1:
+        setting+=[std_data[i-1]]
+        std_data=std_data[i+1:]
+        i=std_data.find('/')
+    return setting
 ############################################################
 ################# Définition des constantes ################
 ############################################################
@@ -131,27 +140,32 @@ while True:
         t.start()
         
     #Si l'ordre reçu est de lancer le flux média
-    elif(std_data=='launch'):
-        conn.close()
-        threads = []
-        for i in range(nb_ips):
-            print("Lancement des connections SSH, préparation des écrans.")
-            t = threading.Thread(target=workon, args=(ips[i],i,True,))
+    elif(std_data[:6]=='launch'):
+        if(len(std_data)!=6):
+            positions=get_setting(std_data[7:])
+            conn.close()
+            threads = []
+            for i in range(nb_ips):
+                print("Lancement des connections SSH, préparation des écrans.")
+                if(positions[i]!='0'):
+                    t = threading.Thread(target=workon, args=(ips[i],i,True,positions[i]))
+                    t.start()
+                    threads.append(t)
+            print("Ecrans en attente du flux média.")
+            time.sleep(3)
+          
+            t = threading.Thread(target=send_media)
             t.start()
-            threads.append(t)
-        print("Ecrans en attente du flux média.")
-        time.sleep(3)
-      
-        t = threading.Thread(target=send_media)
-        t.start()
-        print("Flux média en cours d'envoi.")    
+            print("Flux média en cours d'envoi.")    
+        else:
+            print("Erreur d'envoi du flux média : pas de positions reçues.")
         
     #Si l'ordre reçu est l'arrêt de la lecture du flux média
     elif(std_data=='stop'):
         conn.close()
         threads = []
         for i in range(nb_ips):
-            t = threading.Thread(target=workon, args=(ips[i],i,False,))
+            t = threading.Thread(target=workon, args=(ips[i],i,False,''))
             t.start()
             threads.append(t)
         k.press_key('q')
