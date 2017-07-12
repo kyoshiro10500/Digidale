@@ -2,10 +2,13 @@ package com.example.jonathan.applicationtest;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -15,11 +18,21 @@ import android.widget.Toast;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Stack;
+
+import static java.sql.DriverManager.println;
 
 public class MainActivity2 extends AppCompatActivity
 {
@@ -31,7 +44,7 @@ public class MainActivity2 extends AppCompatActivity
     private static final String TAG = "MainActivity";
     private static final int REQUEST_CODE = 6384; // onActivityResult request
     public String path;
-
+    public byte[] b;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -164,8 +177,76 @@ public class MainActivity2 extends AppCompatActivity
         final Button btn_show_path = (Button) findViewById(R.id.show_path);
         btn_show_path.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Toast toast = Toast.makeText(getApplicationContext(), "path : "+path, Toast.LENGTH_SHORT);
-                toast.show();
+                File file=new File(path);
+
+                final byte[] b = new byte[(int) file.length()];
+                try {
+                FileInputStream fileInputStream = new FileInputStream(file);
+                fileInputStream.read(b);
+                fileInputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                final String b_string = new String(b);
+
+                //final String encodedImage = Base64.encodeToString(b, Base64.DEFAULT);
+
+                Thread t = new Thread() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            Socket sock = new Socket(ip_address, Integer.parseInt(ip_port));
+                            PrintWriter out = new PrintWriter(
+                                    new BufferedWriter(
+                                            new OutputStreamWriter(sock.getOutputStream())
+                                    )
+                                    , true);
+                            out.write("begin-image/"+Integer.toString(b.length)+"-end");
+                            out.flush();
+
+
+                            DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
+                            dos.write(b);
+                            dos.flush();
+                            sock.shutdownInput();
+                        } catch (UnknownHostException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                t.start();
+              /*  Thread u = new Thread() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            Socket sock = new Socket(ip_address, Integer.parseInt(ip_port));
+
+                            OutputStream os=sock.getOutputStream();
+                            ByteArrayOutputStream bos=(ByteArrayOutputStream)os;
+                            bos.write(b);
+                            bos.flush();
+
+                            wait(3000);
+                            sock.shutdownInput();
+                        } catch (UnknownHostException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                u.start();*/
+
             }
         });
     }

@@ -13,7 +13,10 @@ import os
 import threading
 import paramiko
 from pykeyboard import PyKeyboard
-
+import base64
+from base64 import decodestring
+from PIL import Image
+import struct
 #######################################################
 ############## Définition des fonctions  ##############
 #######################################################
@@ -89,6 +92,24 @@ def get_setting(std_data):
         std_data=std_data[i+1:]
         i=std_data.find('/')
     return setting
+    
+def decode_base64(data):
+    """Decode base64, padding being optional.
+
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+
+    """
+    missing_padding = len(data) % 4
+    if missing_padding != 0:
+        data += b'='* (4 - missing_padding)
+    return base64.decodestring(data)
+def delete_n(t):
+    i=t.find('\n')
+    while i!=-1:
+        t=t[:i]+t[i+1:]
+        i=t.find('\n')
+    return t
 ############################################################
 ################# Définition des constantes ################
 ############################################################
@@ -114,8 +135,9 @@ print("Socket créé à l'adresse "+HOST+":"+str(PORT)+" .")
 while True:
     conn, addr = mysock.accept() #accept the connection
     print("Connection du mobile "+str(addr)+" acceptée.")
-    data = conn.recv(1024) #how many bytes of data will the server receive
+    data = conn.recv(10000000) #how many bytes of data will the server receive
     std_data=standart(data) #suppression des caracteres liés au transfert de données via socket
+    print("----------------------------------------ORDRE RECU AVANT TRAITEMENT :" + str(data)+"\n-------------------------------------")
     print("Ordre "+ std_data+" reçu.")
     
     #Si l'ordre reçu est un scan du réseau et l'affichage des écrans
@@ -170,7 +192,28 @@ while True:
             threads.append(t)
         k.press_key('q')
         k.release_key('q')
-        print("Flux arrêté.")
+        print("Flux arrêté.")           
+    elif(std_data[:5]=='image'):
+        size = std_data[6:]
+        size_int=int(size)
+        print("TAILLE RECUE = " + str(size))
+        with open('youhi.jpg', 'wb') as f:
+            while size_int > 0:
+                data = conn.recv(1024)
+                f.write(data)
+                size_int -= len(data)
+#==============================================================================
+#         imagestr=std_data[6:]
+# 
+#         imgdata = base64.b64decode(imagestr)
+#         print(imagestr.encode('utf-8'))
+#         filename = 'some_image.jpg'  # I assume you have a way of picking unique filenames
+#         with open(filename, 'wb') as f:
+#              f.write(imagestr.encode('utf-8'))
+#              f.close()
+# 
+#==============================================================================
+
 #==============================================================================
 #         conn.close()
 #         mysock.close()
