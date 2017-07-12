@@ -2,40 +2,36 @@ package com.example.jonathan.applicationtest;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Base64;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Stack;
 
-import static java.sql.DriverManager.println;
-
 public class MainActivity2 extends AppCompatActivity
 {
+    private Handler handler ;
+    private ProgressBar firstBar = null ;
     private String nb_ips ="Default" ;
     private String ip_address="";
     private String ip_port="";
@@ -44,7 +40,8 @@ public class MainActivity2 extends AppCompatActivity
     private static final String TAG = "MainActivity";
     private static final int REQUEST_CODE = 6384; // onActivityResult request
     public String path;
-    public byte[] b;
+    boolean loading = true ;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -63,6 +60,8 @@ public class MainActivity2 extends AppCompatActivity
             tabChoice[i] = 0 ;
             pileChoix.push(Integer.parseInt(nb_ips)-i-1) ;
         }
+        firstBar = (ProgressBar)findViewById(R.id.firstBar);
+        handler = new Handler() ;
 
         GridView gridview = (GridView) findViewById(R.id.gridViewScreens);
         ImageAdapter grid_adapt = new ImageAdapter(this);
@@ -178,16 +177,16 @@ public class MainActivity2 extends AppCompatActivity
         btn_show_path.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 File file=new File(path);
-
+                loading = true ;
                 final byte[] b = new byte[(int) file.length()];
                 try {
-                FileInputStream fileInputStream = new FileInputStream(file);
-                fileInputStream.read(b);
-                fileInputStream.close();
+                    FileInputStream fileInputStream = new FileInputStream(file);
+                    fileInputStream.read(b);
+                    fileInputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    loading=false ;
                 }
-                final String b_string = new String(b);
 
                 //final String encodedImage = Base64.encodeToString(b, Base64.DEFAULT);
 
@@ -204,48 +203,49 @@ public class MainActivity2 extends AppCompatActivity
                                     , true);
                             out.write("begin-image/"+Integer.toString(b.length)+"-end");
                             out.flush();
-
-
+                            SystemClock.sleep(1000);
                             DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
                             dos.write(b);
                             dos.flush();
                             sock.shutdownInput();
+                            loading = false ;
                         } catch (UnknownHostException e) {
-                            // TODO Auto-generated catch block
+                            loading = false ;
                             e.printStackTrace();
                         } catch (IOException e) {
-                            // TODO Auto-generated catch block
+                            loading = false ;
                             e.printStackTrace();
                         }
                     }
                 };
                 t.start();
-              /*  Thread u = new Thread() {
-
+                firstBar.setProgress(0);
+                firstBar.setVisibility(View.VISIBLE);
+                Thread thread = new Thread() {
                     @Override
-                    public void run() {
-                        try {
-                            Socket sock = new Socket(ip_address, Integer.parseInt(ip_port));
+                    public void run(){
+                            int i = 0 ;
+                            while( loading )
+                            {
+                                i = i + 5;
+                                firstBar.setProgress(i);
+                            }
 
-                            OutputStream os=sock.getOutputStream();
-                            ByteArrayOutputStream bos=(ByteArrayOutputStream)os;
-                            bos.write(b);
-                            bos.flush();
+                            // Update the progress bar
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    firstBar.setVisibility(View.INVISIBLE);
+                                    Toast toast = Toast.makeText(getApplicationContext(), "fichier envoyé  : "+path, Toast.LENGTH_SHORT);
+                                    toast.show();
+                                }
+                            });
 
-                            wait(3000);
-                            sock.shutdownInput();
-                        } catch (UnknownHostException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                     }
+
                 };
-                u.start();*/
+
+                thread.start();
 
             }
         });

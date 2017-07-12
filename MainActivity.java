@@ -1,14 +1,11 @@
 package com.example.jonathan.applicationtest;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.view.View;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -16,11 +13,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
-import android.widget.Toast;
+import android.view.View;
 import android.widget.EditText;
-
-import com.ipaulpro.afilechooser.utils.FileUtils;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -34,7 +29,7 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener
 {
-    private String nb_ips ="Default" ;
+    private String nb_ips ="0" ;
     private String[] liste_ips={};
 
 
@@ -45,7 +40,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -136,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             , true);
                     out.println("begin-ping-end");
 
-                    BufferedReader bfr = new BufferedReader(new InputStreamReader (s.getInputStream()));
+                    BufferedReader bfr = new BufferedReader(new InputStreamReader(s.getInputStream()));
                     nb_ips = bfr.readLine();
                     for(int i=0;i < Integer.parseInt(nb_ips);i++)
                     {
@@ -145,22 +139,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     }
                     s.close();
                 }
-                catch (IOException e)
+                catch(IOException e)
                 {
-                    e.printStackTrace();
+                    nb_ips="-1" ;
                 }
             }
         };
         t.start();
 
         SystemClock.sleep(200);
-        if(Integer.parseInt(nb_ips) != 0)
+        if(Integer.parseInt(nb_ips) >= 0)
         {
             Intent intent = new Intent(MainActivity.this, MainActivity2.class);
             intent.putExtra("EXTRA_MESSAGE2",nb_ips);
             intent.putExtra("EXTRA_MESSAGE3",ip_address);
             intent.putExtra("EXTRA_MESSAGE4",ip_port.toString());
             startActivity(intent);
+        }
+        else if(Integer.parseInt(nb_ips) == -1)
+        {
+            Toast toast = Toast.makeText(getApplicationContext(), "Connection error, please retry", Toast.LENGTH_SHORT);
+            toast.show();
         }
         else
         {
