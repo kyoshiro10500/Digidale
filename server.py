@@ -55,9 +55,9 @@ def set_ips():
 
 def send_media():
     """Envoi du flux média par le serveur."""
-    subprocess.call("avconv -re -i movie.mp4 -vcodec copy -f avi -an udp://239.0.1.23:1234", shell=True)
+    subprocess.call("./scripttest.sh "+file2play, shell=True)
 
-def workon(host,i,boolean,place):
+def workon(host,i,boolean,place,nb_screen):
     """Mise des écrans en attente du flux média."""
     tableau_ssh=[0 for i in range(nb_ips)]
     tableau_ssh[i] = paramiko.SSHClient()
@@ -65,9 +65,9 @@ def workon(host,i,boolean,place):
     tableau_ssh[i].connect(host, username='pi', password='raspberry')
     if(boolean):
         if(host=="169.254.229.10"):
-            tableau_ssh[i].exec_command("pwomxplayer --tile-code=4"+place+" udp://239.0.1.23:1234?buffer_size=1200000B | ./fbcp")
+            tableau_ssh[i].exec_command("pwomxplayer --config="+str(nb_screen)+"digi udp://239.0.1.23:1234?buffer_size=1200000B | ./fbcp")
         else:
-            tableau_ssh[i].exec_command("pwomxplayer --tile-code=4"+place+" udp://239.0.1.23:1234?buffer_size=1200000B")
+            tableau_ssh[i].exec_command("pwomxplayer --config="+str(nb_screen)+"digi udp://239.0.1.23:1234?buffer_size=1200000B")
     else:
          tableau_ssh[i].exec_command("./script.sh")
          
@@ -110,6 +110,14 @@ def delete_n(t):
         t=t[:i]+t[i+1:]
         i=t.find('\n')
     return t
+    
+def set_config_file(host, row,col,w,h,position):
+    connection=paramiko.SSHClient()
+    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    connection.connect(host, username='pi', password='raspberry')
+    connection.exec_command("python gen_config.py "+str(w)+" "+str(h)+" "+str(col)+" "+str(row)+" "+str(position))
+    connection.close
+
 ############################################################
 ################# Définition des constantes ################
 ############################################################
@@ -125,8 +133,10 @@ PORT = 7000 #open port 7000 for connection
 mysock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 mysock.bind((HOST, PORT)) #how many connections can it receive at one time
 mysock.listen(1)
+file2play=""
 print("Socket créé à l'adresse "+HOST+":"+str(PORT)+" .")
-
+width=0
+height=0
 
 #################################################
 ########## Mise en écoute du serveur ############
@@ -165,16 +175,24 @@ while True:
     elif(std_data[:6]=='launch'):
         if(len(std_data)!=6):
             positions=get_setting(std_data[7:])
+            ind=std_data.find("|")
+            nb_ligne=std_data[ind+1]
+            nb_col=std_data[ind+3]
+            nb_screen=int(nb_ligne)*int(nb_col)
+            for i in range(nb_ips):
+                l=threading.Thread(target=set_config_file,args=(ips[i],int(nb_ligne),int(nb_col),width,height,positions[i]))
+                l.start()
+            time.sleep(10)
             conn.close()
             threads = []
             for i in range(nb_ips):
                 print("Lancement des connections SSH, préparation des écrans.")
                 if(positions[i]!='0'):
-                    t = threading.Thread(target=workon, args=(ips[i],i,True,positions[i]))
+                    t = threading.Thread(target=workon, args=(ips[i],i,True,positions[i],nb_screen))
                     t.start()
                     threads.append(t)
             print("Ecrans en attente du flux média.")
-            time.sleep(3)
+            time.sleep(5)
           
             t = threading.Thread(target=send_media)
             t.start()
@@ -187,21 +205,72 @@ while True:
         conn.close()
         threads = []
         for i in range(nb_ips):
-            t = threading.Thread(target=workon, args=(ips[i],i,False,''))
+            t = threading.Thread(target=workon, args=(ips[i],i,False,'',nb_screen))
             t.start()
             threads.append(t)
-        k.press_key('q')
-        k.release_key('q')
+        os.popen("./stop_buffer.sh","w")
         print("Flux arrêté.")           
     elif(std_data[:5]=='image'):
         size = std_data[6:]
         size_int=int(size)
         print("TAILLE RECUE = " + str(size))
-        with open('youhi.jpg', 'wb') as f:
+        num_image=len(os.listdir('images_uploaded'))
+        filename='image'+str(num_image)
+        with open('images_uploaded/'+filename+'.jpg', 'wb') as f:
             while size_int > 0:
                 data = conn.recv(1024)
                 f.write(data)
                 size_int -= len(data)
+        conn.close()
+        #saving videos
+        im=Image.open('images_uploaded/image'+str(num_image)+'.jpg')
+        width,height=im.size
+        if width>height:
+            scale='1080:960'
+        else:
+            scale='960:1080'
+        duree='5'
+        filename_output='video'+str(num_image)
+        os.popen('ffmpeg -loop 1 -i images_uploaded/'+filename+'.jpg -c:v libx264 -t '+duree+' -pix_fmt yuv420p -vf scale='+scale+' images_transformed/'+filename_output+'.mp4','w')
+        file2play="images_transformed/"+filename_output+".mp4"
+    elif(std_data[:5]=='video'):
+        size = std_data[6:]
+        size_int=int(size)
+        print("TAILLE RECUE = " + str(size))
+        num_image=len(os.listdir('videos_uploaded'))
+        filename='video'+str(num_image)
+        with open('videos_uploaded/'+filename+'.mp4', 'wb') as f:
+            while size_int > 0:
+                data = conn.recv(1024)
+                f.write(data)
+                size_int -= len(data)
+        conn.close()
+        file2play="videos_uploaded/"+filename+".mp4"
+    elif(std_data=='recherche'):
+        liste_videos=os.listdir('videos_uploaded')
+        liste_images=os.listdir('images_uploaded')
+        liste_fichiers=''
+        nb_fichiers=0
+        for filename in liste_videos:
+            liste_fichiers+=filename+'\n'
+            nb_fichiers+=1
+        for filename in liste_images:
+            liste_fichiers+=filename+'\n'
+            nb_fichiers+=1
+        conn.sendall((str(nb_fichiers)+'\n'+liste_fichiers).encode())
+        conn.close()
+    elif(std_data[:7]=='lecture'):
+        filename=std_data[8:]
+        if(filename[:5]=='image'):
+            file2play='images_transformed/video'+filename[5:-4]+".mp4"
+            print("Fichier selectionné à lire : " +file2play)
+        else:
+            file2play='videos_uploaded/video'+filename[5:]
+            print("Fichier selectionné à lire : " +file2play)
+
+        conn.close()
+
+
 #==============================================================================
 #         imagestr=std_data[6:]
 # 
