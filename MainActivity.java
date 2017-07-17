@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         t.start();
 
         SystemClock.sleep(200);
-        if(Integer.parseInt(nb_ips) >= 0)
+        if(Integer.parseInt(nb_ips) > 0)
         {
             Intent intent = new Intent(MainActivity.this, MainActivity2.class);
             intent.putExtra("EXTRA_MESSAGE2",nb_ips);

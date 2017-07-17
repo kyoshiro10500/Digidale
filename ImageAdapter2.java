@@ -14,12 +14,14 @@ import java.util.Arrays;
  * Created by jonathan on 05/07/17.
  */
 
-public class ImageAdapter extends BaseAdapter {
+public class ImageAdapter2 extends BaseAdapter {
     private Context mContext ;
-    public float scale ;
-    public ImageAdapter(Context c) {
+    private float scale ;
+    private int ecrans ;
+    public ImageAdapter2(Context c, int nb_ecrans) {
         mContext = c;
         scale = c.getResources().getDisplayMetrics().density ;
+        ecrans = nb_ecrans ;
     }
 
     public int getCount() {
@@ -41,7 +43,7 @@ public class ImageAdapter extends BaseAdapter {
             // if it's not recycled, initialize some attributes
             imageView = new ImageView(mContext);
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            imageView.setLayoutParams(new GridView.LayoutParams((int) (55*scale+0.5f), (int) (55*scale+0.5f)));
+            imageView.setLayoutParams(new GridView.LayoutParams((int) (35*scale+0.5f), (int) (35*scale+0.5f)));
 
         } else {
             imageView = (ImageView) convertView;
@@ -81,36 +83,8 @@ public class ImageAdapter extends BaseAdapter {
 
         }
         else if(indice==3){
-            this.mThumbIds[position]=R.drawable.num4;
+            this.mThumbIds[position]=R.drawable.num3;
 
-        }
-        else if(indice==4){
-            this.mThumbIds[position]=R.drawable.num5;
-
-        }
-        else if(indice==5){
-            this.mThumbIds[position]=R.drawable.num6;
-
-        }
-        else if(indice==6){
-            this.mThumbIds[position]=R.drawable.num7;
-
-        }
-        else if(indice==7){
-            this.mThumbIds[position]=R.drawable.num8;
-
-        }
-        else if(indice==8){
-            this.mThumbIds[position]=R.drawable.num9;
-
-        }
-        else if(indice==9){
-            this.mThumbIds[position]=R.drawable.num10;
-
-        }
-        else
-        {
-            this.mThumbIds[position]=R.drawable.screen;
         }
     }
     public void hideNumThumb(Integer position){
