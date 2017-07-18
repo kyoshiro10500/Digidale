@@ -13,31 +13,31 @@
         android:id="@+id/btn_choosefile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Button"
-        tools:layout_constraintRight_creator="1"
         android:layout_marginEnd="34dp"
-        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginLeft="0dp"
         android:layout_marginRight="34dp"
-        tools:layout_constraintTop_creator="1"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="8dp"
+        android:text="Choisir"
         app:layout_constraintLeft_toRightOf="@+id/btn_chooseserver"
-        android:layout_marginLeft="0dp" />
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_constraintRight_creator="1"
+        tools:layout_constraintTop_creator="1" />
 
     <Button
         android:id="@+id/show_path"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Button"
-        tools:layout_constraintTop_creator="1"
+        android:layout_marginLeft="32dp"
+        android:layout_marginRight="0dp"
         android:layout_marginStart="32dp"
         android:layout_marginTop="8dp"
-        tools:layout_constraintLeft_creator="1"
+        android:text="Envoyer"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginLeft="32dp"
         app:layout_constraintRight_toLeftOf="@+id/btn_chooseserver"
-        android:layout_marginRight="0dp" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_constraintLeft_creator="1"
+        tools:layout_constraintTop_creator="1" />
 
     <ProgressBar
         android:id="@+id/firstBar"
@@ -59,17 +59,17 @@
         android:id="@+id/btn_chooseserver"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Choisir un fichier"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="60dp"
+        android:text="Consulter la liste"
+        app:layout_constraintBottom_toTopOf="@+id/firstBar"
+        app:layout_constraintHorizontal_bias="0.502"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        tools:layout_constraintRight_creator="1"
-        tools:layout_constraintBottom_creator="1"
-        app:layout_constraintBottom_toTopOf="@+id/firstBar"
-        tools:layout_constraintLeft_creator="1"
-        android:layout_marginBottom="20dp"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="60dp"
-        app:layout_constraintHorizontal_bias="0.502" />
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintLeft_creator="1"
+        tools:layout_constraintRight_creator="1" />
 
     <ListView
         android:id="@+id/listFile"

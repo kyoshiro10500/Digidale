@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 
 /**
- * Created by jonathan on 05/07/17.
+ * Adapter permetant d'adapter le nombre d'écran affichés pour afficher l'image étalon sur ceux ci
  */
 
 public class ImageAdapter extends BaseAdapter {
@@ -68,6 +68,8 @@ public class ImageAdapter extends BaseAdapter {
         }
 
     }
+
+    //TODO gérer un affichage d'images dynamiques
     public void showNumThumb(Integer indice, Integer position){
         if(indice==0){
             this.mThumbIds[position]=R.drawable.num1;

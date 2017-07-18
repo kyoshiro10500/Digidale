@@ -4,15 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -27,8 +19,26 @@ import java.net.Socket;
 import java.util.Arrays;
 
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener
+
+/*
+    MainActivity définie la classe de la première activité que l'utilisateur voit au lancement de l'application.
+
+    Les intéractions définies ici :
+        -Saisie de l'adresse ip et du port du controleur pour la connexion grâce à des TextEdit
+        -Validation de la saisie grâce à un Button
+
+    Intéractions à prévoir :
+        -Bouton de contact
+        -Bouton vers site web
+        -Mentions légales
+        -Tutoriel rapide pour l'utilisateur
+ */
+public class MainActivity extends AppCompatActivity
 {
+    /*
+        nb_ips et liste_ips vont être obtenues à la connexion avec le controleur.
+        Celles-ci permettent de savoir si il y a effectivement des dalles en écoute sur le réseau
+     */
     private String nb_ips ="0" ;
     private String[] liste_ips={};
 
@@ -38,24 +48,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
-
+        /*
+            btn_ping est le bouton qui permet d'intéroger le controleur quant à l'état du réseau
+         */
         final FloatingActionButton btn_ping = (FloatingActionButton) findViewById(R.id.btn_ping);
         btn_ping.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -64,72 +60,54 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
 
-
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
     }
 
-    @Override
-    public void onBackPressed()
-    {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START))
-        {
-            drawer.closeDrawer(GravityCompat.START);
-        }
-        else
-        {
-            super.onBackPressed();
-        }
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu)
-    {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
+    /*
+        @requires Nothing
+        @assigns nb_ips et liste_ips
+        @ensures assigne nb_ips >0 et liste_ips non vide si il y a des dalles en écoute sur le réseau
+                 assigne nb_ips = -1 et liste_ips vide si le controleur n'a pas pu scanner le réseau
+                 assigne nb_ips = 0 et liste_ips vide si aucune dalle est en écoute sur le réseau
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+        Problèmes connus : Si l'utilisateur spam le bouton lors de la connexion, il arrive que le serveur additionne nb_ips plusieures fois
+                           comme-ci il y avait + de dalles en écoute qu'il y en a vraiment.
+                           Par exemple avec 2 dalles, en appuyant plusieures fois, il peut apparaitre 4 dalles
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings)
-        {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
+                           => solution possible : mettre un cooldown sur le bouton ping
+     */
     public void onClickBtnPing()
     {
+
+        //Récupération du contenu des deux TextEdit pour la connexion
         EditText et2 = (EditText) findViewById(R.id.EditText02);
         final String ip_address =et2.getText().toString();
-
         EditText et3 = (EditText) findViewById(R.id.EditText03);
         final Integer ip_port = Integer.parseInt(et3.getText().toString());
 
+        //La connexion est effectuée dans un thread
         Thread t = new Thread() {
 
             @Override
             public void run() {
                 try
                 {
+                    //Tentative de connexion au controleur
                     Socket s = new Socket(ip_address,ip_port);
                     PrintWriter out = new PrintWriter(
                                         new BufferedWriter(
                                                 new OutputStreamWriter(s.getOutputStream())
                                         )
                             , true);
+                    //Message standardisé pour que le controleur sache qu'il a effectivement des informations à récupérer et ce qu'il doit effectuer
                     out.println("begin-ping-end");
 
+                    //Récupération de la réponse du controleur qui renvoit d'abord le nombre d'ip détecté puis la liste des ips
+                    //Format du message :
+                    //3
+                    //192.XXX.XXX.XXX
+                    //192.XXX.XXX.XXX
+                    //192.XXX.XXX.XXX
                     BufferedReader bfr = new BufferedReader(new InputStreamReader(s.getInputStream()));
                     nb_ips = bfr.readLine();
                     for(int i=0;i < Integer.parseInt(nb_ips);i++)
@@ -147,7 +125,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         };
         t.start();
 
+        //Délai d'attente pour la réponse du controleur. Fixé arbitrairement.
         SystemClock.sleep(200);
+        //Traitement selon la réponse obtenue par le controleur
+        //nb_ips > 0 on lance l'activité suivante
+        //nb_ips = -1 le controleur n'a pas pu se connecter au réseau
+        //nb_ips = 0 le controleur n'a pas détecté de dalles
         if(Integer.parseInt(nb_ips) > 0)
         {
             Intent intent = new Intent(MainActivity.this, MainActivity2.class);
@@ -158,49 +141,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         else if(Integer.parseInt(nb_ips) == -1)
         {
-            Toast toast = Toast.makeText(getApplicationContext(), "Connection error, please retry", Toast.LENGTH_SHORT);
+            Toast toast = Toast.makeText(getApplicationContext(), "Une erreur est survenue, veuillez réessayer", Toast.LENGTH_SHORT);
             toast.show();
         }
         else
         {
-            Toast toast = Toast.makeText(getApplicationContext(), "No IPs detected, please retry", Toast.LENGTH_SHORT);
+            Toast toast = Toast.makeText(getApplicationContext(), "Aucun écran détecté, veuillez réessayer", Toast.LENGTH_SHORT);
             toast.show();
         }
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
-    @Override
-    public boolean onNavigationItemSelected(MenuItem item)
-    {
-        // Handle navigation view item clicks here.
-        int id = item.getItemId();
-
-        if (id == R.id.nav_camera)
-        {
-            // Handle the camera action
-        }
-        else if (id == R.id.nav_gallery)
-        {
-
-        }
-        else if (id == R.id.nav_slideshow)
-        {
-
-        }
-        else if (id == R.id.nav_manage) {
-
-        }
-        else if (id == R.id.nav_share)
-        {
-
-        }
-        else if (id == R.id.nav_send)
-        {
-
-        }
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
-        return true;
     }
 
 }

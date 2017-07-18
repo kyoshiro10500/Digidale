@@ -28,38 +28,47 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+/*
+    MainActivity2 définie l'activité que l'utilisateur voit après avoir scanné le réseau
+
+    Les intéractions définies ici :
+        -Selection d'un fichier sur le stockage du téléphone (fichier photo ou vidéo)
+        -Copie du fichier sélectionné vers le stockage du controleur
+        -Accès au contenu stocké sur le controleur
+        -Sélection d'un fichier du controleur pour l'afficher sur les dalles
+
+    Intéractions éventuelles ?
+        -Possibilité de choisir entre affichage de fichier ou affichage de flux continu (stream)
+ */
 public class MainActivity2 extends AppCompatActivity
 {
-    private String [] listFichier ;
     private boolean error ;
+    boolean loading = true ;
     private Handler handler ;
     private ProgressBar firstBar = null ;
-    private static final String TAG = "MainActivity";
     private static final int REQUEST_CODE = 6384; // onActivityResult request
-    public String path="";
-    boolean loading = true ;
-    public String extension ;
+
     private String nb_ips ="Default" ;
     private String ip_address="";
     private String ip_port="";
-    private TextAdapter grid_adapt ;
+
+    private String [] listFichier ;
     private ListView listFile ;
 
-   /* protected void onSaveInstanceState(Bundle savedInstanceState) {
-        super.onSaveInstanceState(savedInstanceState);
-        ArrayList saved = new ArrayList();
-        saved.add(0,ip_address);
-        saved.add(1,nb_ips) ;
-        saved.add(2,ip_port) ;
-        savedInstanceState.putStringArrayList("Ip_array",saved);
-    }*/
+    public String path="";
+    public String extension ;
+    private TextAdapter grid_adapt ;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
+        firstBar = (ProgressBar)findViewById(R.id.firstBar);
+        handler = new Handler() ;
 
-        // Get the Intent that started this activity and extract the string
+        // Récupération des infos passées par l'activité précédente -> nb_ips, ip_address et ip_port
         Intent intent = getIntent();
         if(intent != null)
         {
@@ -68,20 +77,8 @@ public class MainActivity2 extends AppCompatActivity
             ip_port=intent.getStringExtra("EXTRA_MESSAGE4");
         }
 
-        /*if (savedInstanceState != null){
-            ArrayList ip_array = savedInstanceState.getStringArrayList("Ip_array") ;
-            ip_port = (String) ip_array.get(2) ;
-            ip_address = (String) ip_array.get(0) ;
-            nb_ips = (String) ip_array.get(1) ;
-            Toast toast = Toast.makeText(getApplicationContext(), ip_address, Toast.LENGTH_SHORT);
-            toast.show();
-        }
-*/
-        firstBar = (ProgressBar)findViewById(R.id.firstBar);
-
-        handler = new Handler() ;
-
-
+        //Définition de la vue des fichiers du controleur
+        //Les items de la liste sont clickables et permettent de spécifier au controleur quel fichier on veut envoyer sur les dalles
         listFile = (ListView) findViewById(R.id.listFile);
         grid_adapt = new TextAdapter(this);
         listFile.setAdapter(grid_adapt);
@@ -108,7 +105,7 @@ public class MainActivity2 extends AppCompatActivity
                             Intent intent = new Intent(MainActivity2.this, MainActivity3.class);
                             intent.putExtra("EXTRA_MESSAGE2",nb_ips);
                             intent.putExtra("EXTRA_MESSAGE3",ip_address);
-                            intent.putExtra("EXTRA_MESSAGE4",ip_port.toString());
+                            intent.putExtra("EXTRA_MESSAGE4",ip_port);
                             startActivity(intent);
                         }
                         catch (IOException e)
@@ -121,6 +118,7 @@ public class MainActivity2 extends AppCompatActivity
             }
         });
 
+        //Bouton de sélection de fichier sur le stockage du téléphone
         final Button btn_choosefile = (Button) findViewById(R.id.btn_choosefile);
         btn_choosefile.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -129,6 +127,7 @@ public class MainActivity2 extends AppCompatActivity
             }
         });
 
+        //Bouton permettant de voir la liste des fichiers sur le serveur
         final Button btn_chooseserver = (Button) findViewById(R.id.btn_chooseserver);
         btn_chooseserver.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -137,78 +136,103 @@ public class MainActivity2 extends AppCompatActivity
             }
         });
 
+        /*Bouton permettant d'uploader le fichier sur le serveur
+          L'utilisateur est notifié d'un message de la réussite de l'envoi
+
+          Problème connu : Si l'utilisateur n'a pas doné l'autorisation d'accès au stockage de son téléphone
+                           l'upload se soldera toujours par un "Une erreur est survenue lors de l'upload"
+
+                          => Solution envisagée :  demander l'accès lors du premier lancement de l'appli
+        */
         final Button btn_show_path = (Button) findViewById(R.id.show_path);
         btn_show_path.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                File file=new File(path);
-                loading = true ;
-                final byte[] b = new byte[(int) file.length()];
-                try {
-                    FileInputStream fileInputStream = new FileInputStream(file);
-                    fileInputStream.read(b);
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    loading=false ;
-                }
-
-                //final String encodedImage = Base64.encodeToString(b, Base64.DEFAULT);
-
-                Thread t = new Thread() {
-
-                    @Override
-                    public void run() {
-                       try {
-                            String message = "" ;
-                            extension = FileUtils.getExtension(path) ;
-                            if(extension.equals(".jpg"))
-                            {
-                                message = "begin-image/"+Integer.toString(b.length)+"-end" ;
-                            }
-                            else if(extension.equals(".mp4"))
-                            {
-                                message = "begin-video/"+Integer.toString(b.length)+"-end" ;
-                            }
-
-                            if(!message.equals(""))
-                            {
-                                Socket sock = new Socket(ip_address, Integer.parseInt(ip_port));
-                                PrintWriter out = new PrintWriter(
-                                        new BufferedWriter(
-                                                new OutputStreamWriter(sock.getOutputStream())
-                                        )
-                                        , true);
-                                out.write(message);
-                                out.flush();
-                                SystemClock.sleep(1000);
-                                DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
-                                dos.write(b);
-                                dos.flush();
-                                sock.shutdownInput();
-                            }
-                            else
-                            {
-                                error = true ;
-                            }
-                            loading = false ;
-
-                        } catch (UnknownHostException e) {
-                            loading = false ;
-                            error = true ;
-                        } catch (IOException e) {
-                            loading = false ;
-                            error = true ;
-                        }
+                //On vérifie que l'utilisateur a effectivement choisi un fichier sur son téléphone
+                if(path != "")
+                {
+                    //On essaye d'ouvir le fichier pour l'envoi, celui-ci sera envoyer sous forme de tableau de byte
+                    File file = new File(path);
+                    loading = true;
+                    final byte[] b = new byte[(int) file.length()];
+                    try
+                    {
+                        FileInputStream fileInputStream = new FileInputStream(file);
+                        fileInputStream.read(b);
+                        fileInputStream.close();
                     }
-                };
-                t.start();
-                firstBar.setProgress(0);
-                firstBar.setVisibility(View.VISIBLE);
-                Thread thread = new Thread() {
-                    @Override
-                    public void run(){
-                            int i = 0 ;
-                            while( loading )
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                        loading = false;
+                    }
+
+                    Thread t = new Thread() {
+
+                        @Override
+                        public void run() {
+                            try
+                            {
+                                //Le serveur fait une distinction entre image et vidéo
+                                //En effet, celui-ci a besoin de convertir l'image avant de pouvoir la lire
+                                String message = "";
+                                extension = FileUtils.getExtension(path);
+
+                                //TODO : Rajouter + d'extension dispo (.png,.avi,.mkv,.bitmap)
+                                if (extension.equals(".jpg"))
+                                {
+                                    message = "begin-image/" + Integer.toString(b.length) + "-end";
+                                }
+                                else if (extension.equals(".mp4"))
+                                {
+                                    message = "begin-video/" + Integer.toString(b.length) + "-end";
+                                }
+
+                                //Le message n'est pas créé si l'extension n'est ps reconnue
+                                if (!message.equals(""))
+                                {
+                                    Socket sock = new Socket(ip_address, Integer.parseInt(ip_port));
+                                    PrintWriter out = new PrintWriter(
+                                            new BufferedWriter(
+                                                    new OutputStreamWriter(sock.getOutputStream())
+                                            )
+                                            , true);
+                                    out.write(message);
+                                    out.flush();
+                                    SystemClock.sleep(1000);
+                                    DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
+                                    dos.write(b);
+                                    dos.flush();
+                                    sock.shutdownInput();
+                                }
+                                else
+                                {
+                                    error = true;
+                                }
+                                loading = false;
+
+                            }
+                            catch (UnknownHostException e)
+                            {
+                                loading = false;
+                                error = true;
+                            }
+                            catch (IOException e)
+                            {
+                                error = true;
+                                loading = false;
+                            }
+                        }
+                    };
+                    t.start();
+
+                    //Thread dédié à la barre de chargement lors de l'envoi
+                    firstBar.setProgress(0);
+                    firstBar.setVisibility(View.VISIBLE);
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            int i = 0;
+                            while (loading)
                             {
                                 i = i + 5;
                                 firstBar.setProgress(i);
@@ -219,9 +243,12 @@ public class MainActivity2 extends AppCompatActivity
                                 @Override
                                 public void run() {
                                     firstBar.setVisibility(View.INVISIBLE);
-                                    if(!error)
+                                    if (!error)
                                     {
-                                        Toast toast = Toast.makeText(getApplicationContext(), "fichier envoyé  : "+path, Toast.LENGTH_SHORT);
+                                        String[] pathSplit = path.split("/");
+                                        path = pathSplit[pathSplit.length - 1];
+                                        Toast toast = Toast.makeText(getApplicationContext(), "fichier envoyé  : " + path, Toast.LENGTH_SHORT);
+                                        path = "";
                                         toast.show();
                                     }
                                     else
@@ -232,32 +259,40 @@ public class MainActivity2 extends AppCompatActivity
                                 }
                             });
 
-                    }
+                        }
 
-                };
+                    };
 
-                thread.start();
-
+                    thread.start();
+                }
+                else
+                {
+                    Toast toast = Toast.makeText(getApplicationContext(), "Veuillez choisir un fichier avant d'envoyer", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
             }
         });
     }
 
-    private void showChooser() {
+    //Méthode liée à la librairie aFileChooser
+    private void showChooser()
+    {
         // Use the GET_CONTENT intent from the utility class
         Intent target = FileUtils.createGetContentIntent();
         // Create the chooser Intent
-        Intent intent = Intent.createChooser(
-                target, "chooser title");
-        try {
+        Intent intent = Intent.createChooser(target, "chooser title");
+        try
+        {
             startActivityForResult(intent, REQUEST_CODE);
-        } catch (ActivityNotFoundException e) {
+        }
+        catch (ActivityNotFoundException e)
+        {
             // The reason for the existence of aFileChooser
         }
     }
 
-    private void showFileServer() {
-        // Use the GET_CONTENT intent from the utility class
-        //lecture nomfichier + extension
+    private void showFileServer()
+    {
         Thread thread = new Thread() {
             @Override
             public void run(){
@@ -289,9 +324,13 @@ public class MainActivity2 extends AppCompatActivity
                     });
 
 
-                } catch (UnknownHostException e) {
+                }
+                catch (UnknownHostException e)
+                {
                     e.printStackTrace();
-                } catch (IOException e) {
+                }
+                catch (IOException e)
+                {
                     e.printStackTrace();
                 }
             }
@@ -302,21 +341,28 @@ public class MainActivity2 extends AppCompatActivity
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        switch (requestCode)
+        {
             case REQUEST_CODE:
                 // If the file selection was successful
-                if (resultCode == RESULT_OK) {
-                    if (data != null) {
+                if (resultCode == RESULT_OK)
+                {
+                    if (data != null)
+                    {
                         // Get the URI of the selected file
                         final Uri uri = data.getData();
                         //Log.i(TAG, "Uri = " + uri.toString());
-                        try {
+                        try
+                        {
                             // Get the file path from the URI
                             path = FileUtils.getPath(this, uri);
 
-                        } catch (Exception e) {
-                            //Log.e("MainActivity", "File select error", e);
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
                         }
                     }
                 }
