@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity
     private String nb_ips ="0" ;
     private String[] liste_ips={};
 
-
+    boolean available =true ;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -69,12 +69,6 @@ public class MainActivity extends AppCompatActivity
         @ensures assigne nb_ips >0 et liste_ips non vide si il y a des dalles en écoute sur le réseau
                  assigne nb_ips = -1 et liste_ips vide si le controleur n'a pas pu scanner le réseau
                  assigne nb_ips = 0 et liste_ips vide si aucune dalle est en écoute sur le réseau
-
-        Problèmes connus : Si l'utilisateur spam le bouton lors de la connexion, il arrive que le serveur additionne nb_ips plusieures fois
-                           comme-ci il y avait + de dalles en écoute qu'il y en a vraiment.
-                           Par exemple avec 2 dalles, en appuyant plusieures fois, il peut apparaitre 4 dalles
-
-                           => solution possible : mettre un cooldown sur le bouton ping
      */
     public void onClickBtnPing()
     {
@@ -84,54 +78,51 @@ public class MainActivity extends AppCompatActivity
         final String ip_address =et2.getText().toString();
         EditText et3 = (EditText) findViewById(R.id.EditText03);
         final Integer ip_port = Integer.parseInt(et3.getText().toString());
+        if(available) {
+            //La connexion est effectuée dans un thread
+            Thread t = new Thread() {
 
-        //La connexion est effectuée dans un thread
-        Thread t = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        //Tentative de connexion au controleur
+                        Socket s = new Socket(ip_address, ip_port);
+                        PrintWriter out = new PrintWriter(
+                                new BufferedWriter(
+                                        new OutputStreamWriter(s.getOutputStream())
+                                )
+                                , true);
+                        //Message standardisé pour que le controleur sache qu'il a effectivement des informations à récupérer et ce qu'il doit effectuer
+                        out.println("begin-ping-end");
 
-            @Override
-            public void run() {
-                try
-                {
-                    //Tentative de connexion au controleur
-                    Socket s = new Socket(ip_address,ip_port);
-                    PrintWriter out = new PrintWriter(
-                                        new BufferedWriter(
-                                                new OutputStreamWriter(s.getOutputStream())
-                                        )
-                            , true);
-                    //Message standardisé pour que le controleur sache qu'il a effectivement des informations à récupérer et ce qu'il doit effectuer
-                    out.println("begin-ping-end");
-
-                    //Récupération de la réponse du controleur qui renvoit d'abord le nombre d'ip détecté puis la liste des ips
-                    //Format du message :
-                    //3
-                    //192.XXX.XXX.XXX
-                    //192.XXX.XXX.XXX
-                    //192.XXX.XXX.XXX
-                    BufferedReader bfr = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                    nb_ips = bfr.readLine();
-                    for(int i=0;i < Integer.parseInt(nb_ips);i++)
-                    {
-                        liste_ips= Arrays.copyOf(liste_ips, liste_ips.length + 1);
-                        liste_ips[liste_ips.length - 1] = bfr.readLine();
+                        //Récupération de la réponse du controleur qui renvoit d'abord le nombre d'ip détecté puis la liste des ips
+                        //Format du message :
+                        //3
+                        //192.XXX.XXX.XXX
+                        //192.XXX.XXX.XXX
+                        //192.XXX.XXX.XXX
+                        BufferedReader bfr = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                        nb_ips = bfr.readLine();
+                        for (int i = 0; i < Integer.parseInt(nb_ips); i++) {
+                            liste_ips = Arrays.copyOf(liste_ips, liste_ips.length + 1);
+                            liste_ips[liste_ips.length - 1] = bfr.readLine();
+                        }
+                        s.close();
+                    } catch (IOException e) {
+                        nb_ips = "-1";
                     }
-                    s.close();
                 }
-                catch(IOException e)
-                {
-                    nb_ips="-1" ;
-                }
-            }
-        };
-        t.start();
-
+            };
+            t.start();
+        }
+        available = false ;
         //Délai d'attente pour la réponse du controleur. Fixé arbitrairement.
         SystemClock.sleep(200);
         //Traitement selon la réponse obtenue par le controleur
         //nb_ips > 0 on lance l'activité suivante
         //nb_ips = -1 le controleur n'a pas pu se connecter au réseau
         //nb_ips = 0 le controleur n'a pas détecté de dalles
-        if(Integer.parseInt(nb_ips) > 0)
+        if(Integer.parseInt(nb_ips) > 0 )
         {
             Intent intent = new Intent(MainActivity.this, MainActivity2.class);
             intent.putExtra("EXTRA_MESSAGE2",nb_ips);
@@ -141,11 +132,13 @@ public class MainActivity extends AppCompatActivity
         }
         else if(Integer.parseInt(nb_ips) == -1)
         {
+            available = true ;
             Toast toast = Toast.makeText(getApplicationContext(), "Une erreur est survenue, veuillez réessayer", Toast.LENGTH_SHORT);
             toast.show();
         }
         else
         {
+            available = true ;
             Toast toast = Toast.makeText(getApplicationContext(), "Aucun écran détecté, veuillez réessayer", Toast.LENGTH_SHORT);
             toast.show();
         }
