@@ -34,7 +34,7 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 
 public class MainActivity extends AppCompatActivity {
-
+    Thread listener ;
     String toRead ;
     String stringListe ;
     private Handler handler ;
@@ -113,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
                         ip = inetAddress.getHostAddress();
                         socket = new ServerSocket(port) ;
                         CreateListener();
+                        CreateScanListener();
                     }
                 }
             }
@@ -125,16 +126,83 @@ public class MainActivity extends AppCompatActivity {
 
         if (ip == "") {
             ip = "Pas de réseau";
+            TextView ipDisplay = (TextView) findViewById(R.id.ipDisplay);
+            ipDisplay.setText(ip);
+            ip="" ;
+            SystemClock.sleep(1000) ;
+
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Scan();
+                }
+            });
         }
 
-        TextView ipDisplay = (TextView) findViewById(R.id.ipDisplay);
-        ipDisplay.setText(ip);
-        ip="" ;
+    }
+
+    public void CreateScanListener()
+    {
+        Thread scanListener = new Thread(){
+            public void run()
+            {
+                while(true) {
+                    try {
+                        Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
+                                .getNetworkInterfaces();
+                        while (enumNetworkInterfaces.hasMoreElements()) {
+                            NetworkInterface networkInterface = enumNetworkInterfaces
+                                    .nextElement();
+                            Enumeration<InetAddress> enumInetAddress = networkInterface
+                                    .getInetAddresses();
+                            while (enumInetAddress.hasMoreElements()) {
+                                InetAddress inetAddress = enumInetAddress.nextElement();
+
+                                if (inetAddress.isSiteLocalAddress()) {
+                                    ip = inetAddress.getHostAddress();
+                                    socket = new ServerSocket(port);
+                                    if (listener.isInterrupted()) {
+                                        listener.start();
+                                    }
+                                }
+                            }
+                        }
+                    } catch (SocketException e) {
+                    } catch (UnknownHostException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (ip == "") {
+                        ip = "Pas de réseau";
+                        if (listener.isAlive()) {
+                            listener.interrupt();
+                        }
+                    }
+
+                    try {
+                        sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView ipDisplay = (TextView) findViewById(R.id.ipDisplay);
+                            ipDisplay.setText(ip);
+                            ip = "";
+                        }
+                    });
+                }
+            }
+        };
+        scanListener.start();
     }
 
     public void CreateListener()
     {
-        Thread listener = new Thread() {
+        listener = new Thread() {
 
             @Override
             public void run() {
